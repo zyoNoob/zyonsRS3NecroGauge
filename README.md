@@ -42,10 +42,7 @@ If you are not satisfied with the provided customizations or presets, you will n
 If you dislike the audio alerts, you can disable them using the Windows audio mixer or change the sound of the alert by following the first approach listed below.
 
 Here is a short clip showing how the app looks and sounds.
-
-<video width="640" controls>
-  <source src="media/NecroGauge.mp4" type="video/mp4">
-</video>
+https://github.com/zyoNoob/zyonsRS3NecroGauge/media/NecroGauge.mp4
 
 # How do I run it?
 
