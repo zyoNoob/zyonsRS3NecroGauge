@@ -1,3 +1,4 @@
+![appicon](https://github.com/zyoNoob/zyonsRS3NecroGauge/assets/32070378/780658cd-8c41-4d83-a1f5-4d770a3497b1)
 # What is RS3 Necro Gauge?
 
 RS3 Necro Gauge is a UI plugin that allows RuneScape 3 players to track their Necromancy stackable buffs with improved visuals and sound alerts.
