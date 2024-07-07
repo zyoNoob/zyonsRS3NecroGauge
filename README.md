@@ -151,3 +151,4 @@ Feel free to explore the code if you have privacy concerns. However, I will not 
 7. Copy or move these renamed images to the `custom_assets` folder created by the app.
 8. Ensure all images for soul count values `[1,2,3,4,5]` and necrosis count values `[2,4,6,8,10,12]` exist.
 9. Once all steps are complete, run the program again with your custom image settings. It should work flawlessly.
+10. You can look in the custom_assets folder of the repository for reference as to how the images are named.
