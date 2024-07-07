@@ -135,7 +135,7 @@ Feel free to explore the code if you have privacy concerns. However, I will not 
 
 *You have now completed 50% of the work for custom settings. The app exited because we still need to provide it with buff images for your custom settings.*
 
-5. To create your own buff images, start by getting different numbers of souls and capturing screenshots of the soul buff in the buff bar. Crop the images into square PNGs using MS Paint (Photoshop is too expensive for this task). A good tip for doing this, all buffs have a green border, use that as a reference to get clean cropped images.
+6. To create your own buff images, start by getting different numbers of souls and capturing screenshots of the soul buff in the buff bar. Crop the images into square PNGs using MS Paint (Photoshop is too expensive for this task). A good tip for doing this, all buffs have a green border, use that as a reference to get clean cropped images.
 <div style="text-align: center;">
   <img src="media/custom_soul_demo.png" alt="Screenshot of buff bar" width="600">
   <p><em>Screenshot of buff bar</em></p>
@@ -145,10 +145,10 @@ Feel free to explore the code if you have privacy concerns. However, I will not 
   <p><em>Screenshot of square cropped buff `soul_1.png`, `soul_1_alt.png`</em></p>
 </div>
 
-6. Rename the images using this scheme:
+7. Rename the images using this scheme:
     - Soul stack image -> `soul_{soulcount}.png, soul_{soulcount}_alt.png` (e.g., `soul_2.png`, `soul_2_alt.png` for 2 soul stacks).
     - Necrosis stack image -> `necrosis_{necrosiscount}.png` (e.g., `necrosis_4.png` for 4 necrosis stacks).
-7. Copy or move these renamed images to the `custom_assets` folder created by the app.
-8. Ensure all images for soul count values `[1,2,3,4,5]` and necrosis count values `[2,4,6,8,10,12]` exist.
-9. Once all steps are complete, run the program again with your custom image settings. It should work flawlessly.
-10. You can look in the custom_assets folder of the repository for reference as to how the images are named.
+8. Copy or move these renamed images to the `custom_assets` folder created by the app.
+9. Ensure all images for soul count values `[1,2,3,4,5]` and necrosis count values `[2,4,6,8,10,12]` exist.
+10. Once all steps are complete, run the program again with your custom image settings. It should work flawlessly.
+11. You can look in the custom_assets folder of the repository for reference as to how the images are named.
