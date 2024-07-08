@@ -61,9 +61,9 @@ config = load_config()
 
 preconfigured = bool(config)
 
-main_roi = config.get('main_roi', {'left': 1520, 'top': 1660, 'width': 795, 'height': 160})
+main_roi = config.get('main_roi', {'left': 0, 'top': 0, 'width': 795, 'height': 160})
 scale = config.get('scale', 1/6.5)
-image_position = config.get('image_position', {'x': 1200, 'y': 1500})
+image_position = config.get('image_position', {'x': 0, 'y': 0})
 resolution = config.get('resolution', 'reso_3840x2160')
 windows_scaling = config.get('windows_scaling', 150)
 buffbar_size = config.get('buffbar_size', 'medium')
