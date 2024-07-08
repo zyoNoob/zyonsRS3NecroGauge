@@ -41,7 +41,7 @@ def get_available_resolutions():
             resolutions.append(folder)
     return resolutions
 
-def get_window_scaling_options(resolution):
+def get_windows_scaling_options(resolution):
     scaling_options = []
     path = os.path.join(base_path, 'assets', resolution)
     if os.path.exists(path):
@@ -49,9 +49,9 @@ def get_window_scaling_options(resolution):
             scaling_options.append(folder)
     return scaling_options
 
-def get_buffbar_size_options(resolution, window_scaling):
+def get_buffbar_size_options(resolution, windows_scaling):
     buffbar_sizes = []
-    path = os.path.join(base_path, 'assets', resolution, window_scaling)
+    path = os.path.join(base_path, 'assets', resolution, windows_scaling)
     if os.path.exists(path):
         for folder in os.listdir(path):
             buffbar_sizes.append(folder)
@@ -148,28 +148,28 @@ class ImageDisplay(QWidget):
             self.initUpdateRateStep()
         else:
             self.slider_box.setGeometry(800, 200, 500, 200)
-            self.initWindowScalingStep()
+            self.initWindowsScalingStep()
 
-    def initWindowScalingStep(self):
+    def initWindowsScalingStep(self):
         # Window Scaling Dropdown
-        self.window_scaling_dropdown = QComboBox(self)
-        self.updateWindowScalingOptions()
-        self.window_scaling_label = QLabel('Window Scaling')
-        self.slider_layout.addWidget(self.window_scaling_label)
-        self.slider_layout.addWidget(self.window_scaling_dropdown)
+        self.windows_scaling_dropdown = QComboBox(self)
+        self.updateWindowsScalingOptions()
+        self.windows_scaling_label = QLabel('Window Scaling')
+        self.slider_layout.addWidget(self.windows_scaling_label)
+        self.slider_layout.addWidget(self.windows_scaling_dropdown)
 
-        self.confirmWindowScaling_button = QPushButton('Confirm')
-        self.confirmWindowScaling_button.clicked.connect(self.confirmWindowScaling)
-        self.slider_layout.addWidget(self.confirmWindowScaling_button)
+        self.confirmWindowsScaling_button = QPushButton('Confirm')
+        self.confirmWindowsScaling_button.clicked.connect(self.confirmWindowsScaling)
+        self.slider_layout.addWidget(self.confirmWindowsScaling_button)
 
 
-    def confirmWindowScaling(self):
+    def confirmWindowsScaling(self):
         global config
-        config['window_scaling'] = self.window_scaling_dropdown.currentText()
+        config['windows_scaling'] = self.windows_scaling_dropdown.currentText()
 
-        self.window_scaling_label.setParent(None)
-        self.window_scaling_dropdown.setParent(None)
-        self.confirmWindowScaling_button.setParent(None)
+        self.windows_scaling_label.setParent(None)
+        self.windows_scaling_dropdown.setParent(None)
+        self.confirmWindowsScaling_button.setParent(None)
         self.slider_box.setTitle("Buffbar Size Settings")
         self.slider_box.setGeometry(800, 200, 500, 200)
 
@@ -350,17 +350,17 @@ class ImageDisplay(QWidget):
         self.update_rate_slider.setValue(value)
         self.update_rate_label.setText(f'Update Rate: {value} ms')
 
-    def updateWindowScalingOptions(self):
-        self.window_scaling_dropdown.clear()
+    def updateWindowsScalingOptions(self):
+        self.windows_scaling_dropdown.clear()
         resolution = self.resolution_dropdown.currentText()
-        scaling_options = get_window_scaling_options(resolution)
-        self.window_scaling_dropdown.addItems(scaling_options)
+        scaling_options = get_windows_scaling_options(resolution)
+        self.windows_scaling_dropdown.addItems(scaling_options)
 
     def updateBuffbarSizeOptions(self):
         self.buffbar_size_dropdown.clear()
         resolution = self.resolution_dropdown.currentText()
-        window_scaling = self.window_scaling_dropdown.currentText()
-        buffbar_sizes = get_buffbar_size_options(resolution, window_scaling)
+        windows_scaling = self.windows_scaling_dropdown.currentText()
+        buffbar_sizes = get_buffbar_size_options(resolution, windows_scaling)
         self.buffbar_size_dropdown.addItems(buffbar_sizes)
 
     def confirmImageSettings(self):
