@@ -1,13 +1,24 @@
+from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtWidgets import (
+    QApplication,
+    QLabel,
+    QWidget,
+    QVBoxLayout,
+    QSlider,
+    QPushButton,
+    QShortcut,
+    QGroupBox,
+    QLineEdit,
+    QComboBox
+)
+from PyQt5.QtGui import QPixmap, QImage, QKeySequence
 import cv2
 import numpy as np
 import mss
 import json
-from concurrent.futures import ThreadPoolExecutor
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout, QSlider, QHBoxLayout, QPushButton, QShortcut, QGroupBox, QLineEdit, QComboBox
-from PyQt5.QtGui import QPixmap, QImage, QKeySequence
-from PIL import Image
 import sys
 import os
 import pygame
@@ -141,7 +152,7 @@ class ImageDisplay(QWidget):
         self.resolution_dropdown.setParent(None)
         self.confirmResolution_button.setParent(None)
         self.slider_box.setTitle("Window Scaling Settings")
-        
+
 
         if self.resolution_dropdown.currentText()=='custom':
             self.slider_box.setGeometry(800, 200, 500, 200)
@@ -308,10 +319,10 @@ class ImageDisplay(QWidget):
 
     def updateImageProperties(self):
         global scale, image_position
-        
+
         # Update scale
         scale = self.scale_slider.value() / 100.0
-        
+
         # Update position
         image_position['x'] = self.x_slider.value()
         image_position['y'] = self.y_slider.value()
@@ -341,7 +352,7 @@ class ImageDisplay(QWidget):
         value = self.update_rate_slider.value()
         self.update_rate_label.setText(f'Update Rate: {value} ms')
         self.update_rate_textbox.setText(str(value))
-    
+
     def updateRateTextChanged(self):
         try:
             value = int(self.update_rate_textbox.text())
@@ -403,7 +414,7 @@ class ImageDisplay(QWidget):
         windows_scaling = config.get('windows_scaling', 150)
         buffbar_size = config.get('buffbar_size', 'medium')
         update_rate = config.get('update_rate', 50)
-        if resolution=='custom':
+        if resolution == 'custom':
             asset_path_prefix = os.path.join('custom_assets', str(windows_scaling), buffbar_size)
         else:
             asset_path_prefix = os.path.join(base_path, 'assets', resolution, str(windows_scaling), buffbar_size)
@@ -536,6 +547,7 @@ class ImageDisplay(QWidget):
             os.execl(sys.executable, sys.executable, *sys.argv)
         except Exception as e:
             print(f"Error restarting script: {e}")
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
