@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QComboBox
 )
 from PyQt5.QtGui import QPixmap, QImage, QKeySequence
+import ctypes
 import cv2
 import numpy as np
 import mss
@@ -26,6 +27,12 @@ import re
 
 # Initialize pygame mixer for sound
 pygame.mixer.init()
+
+# This effectively calls LoadLibrary for the given modules
+# if not already in memory. Doing this only once avoids
+# *some* additional workload at the expense of less-than-ideal placement.
+u32 = ctypes.windll.user32
+k32 = ctypes.windll.kernel32
 
 if hasattr(sys, '_MEIPASS'):
     base_path = sys._MEIPASS
@@ -67,6 +74,13 @@ def get_buffbar_size_options(resolution, windows_scaling):
         for folder in os.listdir(path):
             buffbar_sizes.append(folder)
     return buffbar_sizes
+
+def get_foreground_window_title():
+    hwnd = u32.GetForegroundWindow()
+    hwnd_title_len = u32.GetWindowTextLengthW(hwnd) + 1
+    sz_buffer = ctypes.create_unicode_buffer(hwnd_title_len)
+    u32.GetWindowTextW(hwnd, sz_buffer, hwnd_title_len)
+    return sz_buffer.value
 
 config = load_config()
 
@@ -422,8 +436,19 @@ class ImageDisplay(QWidget):
 
         self.updateStacks()
 
+    def determineVisibility(self, foreground_window_title):
+        return foreground_window_title == "RuneScape"
+
+    def applyVisibility(self):
+        if self.determineVisibility(get_foreground_window_title()):
+            self.show()
+        else:
+            self.hide()
+
     def showFrame(self, image_path):
         global scale, image_position
+
+        self.applyVisibility()
 
         frame = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
         cv2image = cv2.cvtColor(cv2.resize(frame, (int(frame.shape[1] * scale), int(frame.shape[0] * scale))), cv2.COLOR_BGRA2RGBA)
