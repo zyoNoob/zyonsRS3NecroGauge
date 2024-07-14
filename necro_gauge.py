@@ -1,17 +1,33 @@
+from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtWidgets import (
+    QApplication,
+    QLabel,
+    QWidget,
+    QVBoxLayout,
+    QSlider,
+    QPushButton,
+    QShortcut,
+    QGroupBox,
+    QLineEdit,
+    QComboBox
+    )
+from PyQt5.QtGui import (
+    QPixmap, 
+    QImage, 
+    QKeySequence
+    )
 import cv2
 import numpy as np
 import mss
 import json
-from concurrent.futures import ThreadPoolExecutor
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout, QSlider, QHBoxLayout, QPushButton, QShortcut, QGroupBox, QLineEdit, QComboBox
-from PyQt5.QtGui import QPixmap, QImage, QKeySequence
-from PIL import Image
 import sys
 import os
 import pygame
 import re
+import time
 
 # Initialize pygame mixer for sound
 pygame.mixer.init()
@@ -23,25 +39,25 @@ else:
 
 config_path = 'config.json'
 
-def load_config():
+def loadConfig():
     if os.path.exists(config_path):
         with open(config_path, 'r') as f:
             return json.load(f)
     else:
         return {}
 
-def save_config(config):
+def saveConfig(config):
     with open(config_path, 'w') as f:
         json.dump(config, f)
 
-def get_available_resolutions():
+def getAvailableResolutions():
     resolutions = []
     for folder in os.listdir(os.path.join(base_path, 'assets')):
         if re.match(r'reso_*', folder):
             resolutions.append(folder)
     return resolutions
 
-def get_windows_scaling_options(resolution):
+def getWindowsScalingOptions(resolution):
     scaling_options = []
     path = os.path.join(base_path, 'assets', resolution)
     if os.path.exists(path):
@@ -49,7 +65,7 @@ def get_windows_scaling_options(resolution):
             scaling_options.append(folder)
     return scaling_options
 
-def get_buffbar_size_options(resolution, windows_scaling):
+def getBuffbarSizeOptions(resolution, windows_scaling):
     buffbar_sizes = []
     path = os.path.join(base_path, 'assets', resolution, windows_scaling)
     if os.path.exists(path):
@@ -57,7 +73,7 @@ def get_buffbar_size_options(resolution, windows_scaling):
             buffbar_sizes.append(folder)
     return buffbar_sizes
 
-config = load_config()
+config = loadConfig()
 
 preconfigured = bool(config)
 
@@ -71,16 +87,28 @@ update_rate = config.get('update_rate', 50)
 
 asset_path_prefix = os.path.join(base_path, 'assets', resolution, str(windows_scaling), buffbar_size)
 
-initial_image_path = os.path.join(base_path, 'assets', 'transparent_bg\\s0_n0.png')
 soul_alert_sound_path = os.path.join(base_path, 'assets', 'soul_alert.wav')
 necrosis_alert_sound_path = os.path.join(base_path, 'assets', 'necrosis_alert.wav')
 
 class ImageDisplay(QWidget):
     def __init__(self):
         super().__init__()
-        self.initUI()
+        
+        self.soul_count = 0
+        self.necrosis_count = 0
+        self.deathspark_count = 0
+
         self.soul_alert_played = False
         self.necrosis_alert_played = False
+        
+        self.template_list_souls = []
+        self.template_list_necrosis = []
+        self.template_list_deathsparks = []
+
+        self.modular_render_assets = {'souls':{},'necrosis':{},'deathsparks':{}}
+        self.loadModularRenderAssets()
+        
+        self.initUI()
 
     def initUI(self):
         self.setWindowTitle('RS3 Necro Gauge')
@@ -109,7 +137,7 @@ class ImageDisplay(QWidget):
         self.shortcut = QShortcut(QKeySequence("Ctrl+Shift+Q"), self)
         self.shortcut.activated.connect(self.closeApplication)
 
-        self.showFrame(initial_image_path)
+        self.showFrame()
 
         self.soul_count = 0
         self.necrosis_count = 0
@@ -123,7 +151,7 @@ class ImageDisplay(QWidget):
 
         # Resolution Dropdown
         self.resolution_dropdown = QComboBox(self)
-        self.resolution_dropdown.addItems(get_available_resolutions()+['custom'])
+        self.resolution_dropdown.addItems(getAvailableResolutions()+['custom'])
         self.resolution_label = QLabel('Resolution')
         self.slider_layout.addWidget(self.resolution_label)
         self.slider_layout.addWidget(self.resolution_dropdown)
@@ -131,7 +159,6 @@ class ImageDisplay(QWidget):
         self.confirmResolution_button = QPushButton('Confirm')
         self.confirmResolution_button.clicked.connect(self.confirmResolution)
         self.slider_layout.addWidget(self.confirmResolution_button)
-
 
     def confirmResolution(self):
         global config
@@ -143,7 +170,7 @@ class ImageDisplay(QWidget):
         self.slider_box.setTitle("Window Scaling Settings")
         
 
-        if self.resolution_dropdown.currentText()=='custom':
+        if self.resolution_dropdown.currentText() == 'custom':
             self.slider_box.setGeometry(800, 200, 500, 200)
             self.initUpdateRateStep()
         else:
@@ -161,7 +188,6 @@ class ImageDisplay(QWidget):
         self.confirmWindowsScaling_button = QPushButton('Confirm')
         self.confirmWindowsScaling_button.clicked.connect(self.confirmWindowsScaling)
         self.slider_layout.addWidget(self.confirmWindowsScaling_button)
-
 
     def confirmWindowsScaling(self):
         global config
@@ -317,7 +343,7 @@ class ImageDisplay(QWidget):
         image_position['y'] = self.y_slider.value()
 
         # Load the image using PIL
-        frame = cv2.imread(initial_image_path, cv2.IMREAD_UNCHANGED)
+        frame = self.modular_render_assets['souls'][self.soul_count] + self.modular_render_assets['necrosis'][self.necrosis_count] + self.modular_render_assets['deathsparks'][self.deathspark_count]
         cv2image = cv2.cvtColor(cv2.resize(frame, (int(frame.shape[1] * scale), int(frame.shape[0] * scale))), cv2.COLOR_BGRA2RGBA)
         image = Image.fromarray(cv2image, mode="RGBA")
 
@@ -337,6 +363,25 @@ class ImageDisplay(QWidget):
             main_roi[key] = slider.value()
         self.update()
 
+    def loadModularRenderAssets(self):
+        if preconfigured:
+            for i in range(0, 6):
+                img_buffer = cv2.imread(os.path.join(base_path, 'assets', f'modular_render_assets\\s{i}.png'), cv2.IMREAD_UNCHANGED)
+                self.modular_render_assets['souls'][i] = cv2.resize(img_buffer, (int(img_buffer.shape[1] * scale), int(img_buffer.shape[0] * scale)))
+            for i in [0, 2, 4, 6, 8, 10, 12]:
+                img_buffer = cv2.imread(os.path.join(base_path, 'assets', f'modular_render_assets\\n{i}.png'), cv2.IMREAD_UNCHANGED)
+                self.modular_render_assets['necrosis'][i] = cv2.resize(img_buffer, (int(img_buffer.shape[1] * scale), int(img_buffer.shape[0] * scale)))
+            for i in range(0, 6):
+                img_buffer = cv2.imread(os.path.join(base_path, 'assets', f'modular_render_assets\\ds{i}.png'), cv2.IMREAD_UNCHANGED)
+                self.modular_render_assets['deathsparks'][i] = cv2.resize(img_buffer, (int(img_buffer.shape[1] * scale), int(img_buffer.shape[0] * scale)))
+        else:
+            for i in range(0, 6):
+                self.modular_render_assets['souls'][i] = cv2.imread(os.path.join(base_path, 'assets', f'modular_render_assets\\s{i}.png'), cv2.IMREAD_UNCHANGED)
+            for i in [0, 2, 4, 6, 8, 10, 12]:
+                self.modular_render_assets['necrosis'][i] = cv2.imread(os.path.join(base_path, 'assets', f'modular_render_assets\\n{i}.png'), cv2.IMREAD_UNCHANGED)
+            for i in range(0, 6):
+                self.modular_render_assets['deathsparks'][i] = cv2.imread(os.path.join(base_path, 'assets', f'modular_render_assets\\ds{i}.png'), cv2.IMREAD_UNCHANGED)
+
     def updateRateChanged(self):
         value = self.update_rate_slider.value()
         self.update_rate_label.setText(f'Update Rate: {value} ms')
@@ -353,14 +398,14 @@ class ImageDisplay(QWidget):
     def updateWindowsScalingOptions(self):
         self.windows_scaling_dropdown.clear()
         resolution = self.resolution_dropdown.currentText()
-        scaling_options = get_windows_scaling_options(resolution)
+        scaling_options = getWindowsScalingOptions(resolution)
         self.windows_scaling_dropdown.addItems(scaling_options)
 
     def updateBuffbarSizeOptions(self):
         self.buffbar_size_dropdown.clear()
         resolution = self.resolution_dropdown.currentText()
         windows_scaling = self.windows_scaling_dropdown.currentText()
-        buffbar_sizes = get_buffbar_size_options(resolution, windows_scaling)
+        buffbar_sizes = getBuffbarSizeOptions(resolution, windows_scaling)
         self.buffbar_size_dropdown.addItems(buffbar_sizes)
 
     def confirmImageSettings(self):
@@ -373,7 +418,7 @@ class ImageDisplay(QWidget):
             config['windows_scaling'] = ''
             config['buffbar_size'] = ''
 
-            save_config(config)
+            saveConfig(config)
 
             self.scale_slider.setParent(None)
             self.x_slider.setParent(None)
@@ -383,7 +428,7 @@ class ImageDisplay(QWidget):
 
             exit()
         else:
-            save_config(config)
+            saveConfig(config)
 
             self.scale_slider.setParent(None)
             self.x_slider.setParent(None)
@@ -403,19 +448,31 @@ class ImageDisplay(QWidget):
         windows_scaling = config.get('windows_scaling', 150)
         buffbar_size = config.get('buffbar_size', 'medium')
         update_rate = config.get('update_rate', 50)
-        if resolution=='custom':
+        if resolution == 'custom':
             asset_path_prefix = os.path.join('custom_assets', str(windows_scaling), buffbar_size)
         else:
             asset_path_prefix = os.path.join(base_path, 'assets', resolution, str(windows_scaling), buffbar_size)
+
+        for i in range(1, 6):
+            self.template_list_souls.append(cv2.imread(os.path.join(asset_path_prefix, f'soul_{i}.png'), cv2.IMREAD_COLOR))
+            self.template_list_souls.append(cv2.imread(os.path.join(asset_path_prefix, f'soul_{i}_alt.png'), cv2.IMREAD_COLOR))
+        for i in [2, 4, 6, 8, 10, 12]:
+            self.template_list_necrosis.append(cv2.imread(os.path.join(asset_path_prefix, f'necrosis_{i}.png'), cv2.IMREAD_COLOR))
+        for i in range(1, 6):
+            self.template_list_deathsparks.append(cv2.imread(os.path.join(asset_path_prefix, f'deathspark_{i}.png'), cv2.IMREAD_COLOR))
+
         self.show()
 
         self.updateStacks()
 
-    def showFrame(self, image_path):
+    def showFrame(self):
+        # start_time = time.time()
         global scale, image_position
-
-        frame = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-        cv2image = cv2.cvtColor(cv2.resize(frame, (int(frame.shape[1] * scale), int(frame.shape[0] * scale))), cv2.COLOR_BGRA2RGBA)
+        stacked_image = self.modular_render_assets['souls'][self.soul_count] + self.modular_render_assets['necrosis'][self.necrosis_count] + self.modular_render_assets['deathsparks'][self.deathspark_count]
+        if preconfigured:
+            cv2image = cv2.cvtColor(stacked_image, cv2.COLOR_BGRA2RGBA)
+        else:
+            cv2image = cv2.cvtColor(cv2.resize(stacked_image, (int(stacked_image.shape[1] * scale), int(stacked_image.shape[0] * scale))), cv2.COLOR_BGRA2RGBA)
         image = Image.fromarray(cv2image, mode="RGBA")
 
         data = image.tobytes("raw", "RGBA")
@@ -425,6 +482,7 @@ class ImageDisplay(QWidget):
         self.image_label.setPixmap(pixmap)
         self.image_label.setFixedSize(pixmap.size())
         self.image_label.move(image_position['x'], image_position['y'])
+        # print((time.time()-start_time)*1000)
 
     def captureScreen(self):
         with mss.mss() as sct:
@@ -451,44 +509,33 @@ class ImageDisplay(QWidget):
         return max_index, max_value, match_list
 
     def updateStacks(self):
-        template_list_souls = []
-        template_list_necrosis = []
-
-        for i in range(1, 6):
-            template_list_souls.append(cv2.imread(os.path.join(asset_path_prefix, f'soul_{i}.png'), cv2.IMREAD_COLOR))
-            template_list_souls.append(cv2.imread(os.path.join(asset_path_prefix, f'soul_{i}_alt.png'), cv2.IMREAD_COLOR))
-
-        for i in [2, 4, 6, 8, 10, 12]:
-            template_list_necrosis.append(cv2.imread(os.path.join(asset_path_prefix, f'necrosis_{i}.png'), cv2.IMREAD_COLOR))
-
         game_screen = self.captureScreen()
         try:
             with ThreadPoolExecutor() as executor:
-                future_souls = executor.submit(self.matchTemplates, template_list_souls, game_screen)
-                future_necrosis = executor.submit(self.matchTemplates, template_list_necrosis, game_screen)
+                future_souls = executor.submit(self.matchTemplates, self.template_list_souls, game_screen)
+                future_necrosis = executor.submit(self.matchTemplates, self.template_list_necrosis, game_screen)
+                future_deathsparks = executor.submit(self.matchTemplates, self.template_list_deathsparks, game_screen)
 
                 max_index_souls, max_value_souls, match_list_souls = future_souls.result()
                 max_index_necrosis, max_value_necrosis, match_list_necrosis = future_necrosis.result()
+                max_index_deathsparks, max_value_deathsparks, match_list_deathsparks = future_deathsparks.result()
 
             if max_value_souls > 0.9:
                 self.soul_count = (max_index_souls // 2) + 1
-                cv2.rectangle(game_screen, match_list_souls[max_index_souls][0:2],
-                              (match_list_souls[max_index_souls][0] + match_list_souls[max_index_souls][2],
-                               match_list_souls[max_index_souls][1] + match_list_souls[max_index_souls][3]),
-                              (0, 255, 255), 2)
             else:
                 self.soul_count = 0
 
             if max_value_necrosis > 0.9:
                 self.necrosis_count = (max_index_necrosis + 1) * 2
-                cv2.rectangle(game_screen, match_list_necrosis[max_index_necrosis][0:2],
-                              (match_list_necrosis[max_index_necrosis][0] + match_list_necrosis[max_index_necrosis][2],
-                               match_list_necrosis[max_index_necrosis][1] + match_list_necrosis[max_index_necrosis][3]),
-                              (0, 0, 255), 2)
             else:
                 self.necrosis_count = 0
 
-            self.showFrame(os.path.join(base_path, 'assets', f'transparent_bg\\s{self.soul_count}_n{self.necrosis_count}.png'))
+            if max_value_deathsparks > 0.9:
+                self.deathspark_count = (max_index_deathsparks + 1)
+            else:
+                self.deathspark_count = 0
+
+            self.showFrame()
 
             if self.soul_count == 5 and not self.soul_alert_played:
                 self.playAlert('soul')
