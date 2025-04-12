@@ -1,0 +1,44 @@
+# Build and distribution paths
+build/
+dist/
+*.egg-info/
+*.egg
+*.spec
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sqlite
+
+# Environment variables
+.env
+.env.local
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# pytest
+.pytest_cache/
