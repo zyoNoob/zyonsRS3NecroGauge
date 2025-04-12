@@ -15,8 +15,8 @@ from PyQt5.QtWidgets import (
     QComboBox
     )
 from PyQt5.QtGui import (
-    QPixmap, 
-    QImage, 
+    QPixmap,
+    QImage,
     QKeySequence
     )
 import cv2
@@ -85,6 +85,11 @@ windows_scaling = config.get('windows_scaling', 150)
 buffbar_size = config.get('buffbar_size', 'medium')
 update_rate = config.get('update_rate', 50)
 
+# Default to tracking all buffs
+track_souls = config.get('track_souls', True)
+track_necrosis = config.get('track_necrosis', True)
+track_deathsparks = config.get('track_deathsparks', True)
+
 asset_path_prefix = os.path.join(base_path, 'assets', resolution, str(windows_scaling), buffbar_size)
 
 soul_alert_sound_path = os.path.join(base_path, 'assets', 'soul_alert.wav')
@@ -93,21 +98,21 @@ necrosis_alert_sound_path = os.path.join(base_path, 'assets', 'necrosis_alert.wa
 class ImageDisplay(QWidget):
     def __init__(self):
         super().__init__()
-        
+
         self.soul_count = 0
         self.necrosis_count = 0
         self.deathspark_count = 0
 
         self.soul_alert_played = False
         self.necrosis_alert_played = False
-        
+
         self.template_list_souls = []
         self.template_list_necrosis = []
         self.template_list_deathsparks = []
 
         self.modular_render_assets = {'souls':{},'necrosis':{},'deathsparks':{}}
         self.loadModularRenderAssets()
-        
+
         self.initUI()
 
     def initUI(self):
@@ -168,7 +173,7 @@ class ImageDisplay(QWidget):
         self.resolution_dropdown.setParent(None)
         self.confirmResolution_button.setParent(None)
         self.slider_box.setTitle("Window Scaling Settings")
-        
+
 
         if self.resolution_dropdown.currentText() == 'custom':
             self.slider_box.setGeometry(800, 200, 500, 200)
@@ -254,6 +259,41 @@ class ImageDisplay(QWidget):
         self.update_rate_slider.setParent(None)
         self.update_rate_textbox.setParent(None)
         self.confirmUpdateRate_button.setParent(None)
+        self.slider_box.setTitle("Buff Tracking Settings")
+        self.slider_box.setGeometry(800, 200, 500, 250)
+
+        self.initBuffTrackingStep()
+
+    def initBuffTrackingStep(self):
+        # Create checkboxes for each buff type
+        from PyQt5.QtWidgets import QCheckBox
+
+        self.track_souls_checkbox = QCheckBox("Track Soul Stacks")
+        self.track_souls_checkbox.setChecked(True)
+        self.slider_layout.addWidget(self.track_souls_checkbox)
+
+        self.track_necrosis_checkbox = QCheckBox("Track Necrosis Stacks")
+        self.track_necrosis_checkbox.setChecked(True)
+        self.slider_layout.addWidget(self.track_necrosis_checkbox)
+
+        self.track_deathsparks_checkbox = QCheckBox("Track Death Spark Stacks")
+        self.track_deathsparks_checkbox.setChecked(True)
+        self.slider_layout.addWidget(self.track_deathsparks_checkbox)
+
+        self.confirmBuffTracking_button = QPushButton('Confirm')
+        self.confirmBuffTracking_button.clicked.connect(self.confirmBuffTracking)
+        self.slider_layout.addWidget(self.confirmBuffTracking_button)
+
+    def confirmBuffTracking(self):
+        global config
+        config['track_souls'] = self.track_souls_checkbox.isChecked()
+        config['track_necrosis'] = self.track_necrosis_checkbox.isChecked()
+        config['track_deathsparks'] = self.track_deathsparks_checkbox.isChecked()
+
+        self.track_souls_checkbox.setParent(None)
+        self.track_necrosis_checkbox.setParent(None)
+        self.track_deathsparks_checkbox.setParent(None)
+        self.confirmBuffTracking_button.setParent(None)
         self.slider_box.setTitle("Main ROI Settings")
         self.slider_box.setGeometry(800, 200, 500, 400)
 
@@ -333,17 +373,43 @@ class ImageDisplay(QWidget):
         self.slider_layout.addWidget(self.confirm_image_button)
 
     def updateImageProperties(self):
-        global scale, image_position
-        
+        global scale, image_position, track_souls, track_necrosis, track_deathsparks
+
         # Update scale
         scale = self.scale_slider.value() / 100.0
-        
+
         # Update position
         image_position['x'] = self.x_slider.value()
         image_position['y'] = self.y_slider.value()
 
-        # Load the image using PIL
-        frame = self.modular_render_assets['souls'][self.soul_count] + self.modular_render_assets['necrosis'][self.necrosis_count] + self.modular_render_assets['deathsparks'][self.deathspark_count]
+        # Start with a blank image (all zeros)
+        frame = None
+
+        # Only add the buffs that are being tracked
+        if track_souls:
+            if frame is None:
+                frame = self.modular_render_assets['souls'][self.soul_count].copy()
+            else:
+                frame = frame + self.modular_render_assets['souls'][self.soul_count]
+
+        if track_necrosis:
+            if frame is None:
+                frame = self.modular_render_assets['necrosis'][self.necrosis_count].copy()
+            else:
+                frame = frame + self.modular_render_assets['necrosis'][self.necrosis_count]
+
+        if track_deathsparks:
+            if frame is None:
+                frame = self.modular_render_assets['deathsparks'][self.deathspark_count].copy()
+            else:
+                frame = frame + self.modular_render_assets['deathsparks'][self.deathspark_count]
+
+        # If no buffs are being tracked, use a blank image
+        if frame is None:
+            # Create a blank transparent image with the same dimensions as the buff images
+            sample_image = next(iter(self.modular_render_assets['souls'].values()))
+            frame = np.zeros_like(sample_image)
+
         cv2image = cv2.cvtColor(cv2.resize(frame, (int(frame.shape[1] * scale), int(frame.shape[0] * scale))), cv2.COLOR_BGRA2RGBA)
         image = Image.fromarray(cv2image, mode="RGBA")
 
@@ -386,7 +452,7 @@ class ImageDisplay(QWidget):
         value = self.update_rate_slider.value()
         self.update_rate_label.setText(f'Update Rate: {value} ms')
         self.update_rate_textbox.setText(str(value))
-    
+
     def updateRateTextChanged(self):
         try:
             value = int(self.update_rate_textbox.text())
@@ -441,6 +507,7 @@ class ImageDisplay(QWidget):
 
     def applyConfig(self, config):
         global scale, image_position, main_roi, resolution, windows_scaling, buffbar_size, update_rate, asset_path_prefix
+        global track_souls, track_necrosis, track_deathsparks
         main_roi = config.get('main_roi', {'left': 1520, 'top': 1660, 'width': 795, 'height': 160})
         scale = config.get('scale', 1/6.5)
         image_position = config.get('image_position', {'x': 0, 'y': 0})
@@ -448,6 +515,9 @@ class ImageDisplay(QWidget):
         windows_scaling = config.get('windows_scaling', 150)
         buffbar_size = config.get('buffbar_size', 'medium')
         update_rate = config.get('update_rate', 50)
+        track_souls = config.get('track_souls', True)
+        track_necrosis = config.get('track_necrosis', True)
+        track_deathsparks = config.get('track_deathsparks', True)
         if resolution == 'custom':
             asset_path_prefix = os.path.join('custom_assets', str(windows_scaling), buffbar_size)
         else:
@@ -467,8 +537,36 @@ class ImageDisplay(QWidget):
 
     def showFrame(self):
         # start_time = time.time()
-        global scale, image_position
-        stacked_image = self.modular_render_assets['souls'][self.soul_count] + self.modular_render_assets['necrosis'][self.necrosis_count] + self.modular_render_assets['deathsparks'][self.deathspark_count]
+        global scale, image_position, track_souls, track_necrosis, track_deathsparks
+
+        # Start with a blank image (all zeros)
+        stacked_image = None
+
+        # Only add the buffs that are being tracked
+        if track_souls:
+            if stacked_image is None:
+                stacked_image = self.modular_render_assets['souls'][self.soul_count].copy()
+            else:
+                stacked_image = stacked_image + self.modular_render_assets['souls'][self.soul_count]
+
+        if track_necrosis:
+            if stacked_image is None:
+                stacked_image = self.modular_render_assets['necrosis'][self.necrosis_count].copy()
+            else:
+                stacked_image = stacked_image + self.modular_render_assets['necrosis'][self.necrosis_count]
+
+        if track_deathsparks:
+            if stacked_image is None:
+                stacked_image = self.modular_render_assets['deathsparks'][self.deathspark_count].copy()
+            else:
+                stacked_image = stacked_image + self.modular_render_assets['deathsparks'][self.deathspark_count]
+
+        # If no buffs are being tracked, use a blank image
+        if stacked_image is None:
+            # Create a blank transparent image with the same dimensions as the buff images
+            sample_image = next(iter(self.modular_render_assets['souls'].values()))
+            stacked_image = np.zeros_like(sample_image)
+
         if preconfigured:
             cv2image = cv2.cvtColor(stacked_image, cv2.COLOR_BGRA2RGBA)
         else:
@@ -509,44 +607,57 @@ class ImageDisplay(QWidget):
         return max_index, max_value, match_list
 
     def updateStacks(self):
+        global track_souls, track_necrosis, track_deathsparks
         game_screen = self.captureScreen()
         try:
             with ThreadPoolExecutor() as executor:
-                future_souls = executor.submit(self.matchTemplates, self.template_list_souls, game_screen)
-                future_necrosis = executor.submit(self.matchTemplates, self.template_list_necrosis, game_screen)
-                future_deathsparks = executor.submit(self.matchTemplates, self.template_list_deathsparks, game_screen)
+                # Only process the buffs that are being tracked
+                futures = {}
 
-                max_index_souls, max_value_souls, match_list_souls = future_souls.result()
-                max_index_necrosis, max_value_necrosis, match_list_necrosis = future_necrosis.result()
-                max_index_deathsparks, max_value_deathsparks, match_list_deathsparks = future_deathsparks.result()
+                if track_souls:
+                    futures['souls'] = executor.submit(self.matchTemplates, self.template_list_souls, game_screen)
 
-            if max_value_souls > 0.9:
-                self.soul_count = (max_index_souls // 2) + 1
-            else:
-                self.soul_count = 0
+                if track_necrosis:
+                    futures['necrosis'] = executor.submit(self.matchTemplates, self.template_list_necrosis, game_screen)
 
-            if max_value_necrosis > 0.9:
-                self.necrosis_count = (max_index_necrosis + 1) * 2
-            else:
-                self.necrosis_count = 0
+                if track_deathsparks:
+                    futures['deathsparks'] = executor.submit(self.matchTemplates, self.template_list_deathsparks, game_screen)
 
-            if max_value_deathsparks > 0.9:
-                self.deathspark_count = (max_index_deathsparks + 1)
-            else:
-                self.deathspark_count = 0
+                # Process results for tracked buffs
+                if 'souls' in futures:
+                    max_index_souls, max_value_souls, _ = futures['souls'].result()
+                    if max_value_souls > 0.9:
+                        self.soul_count = (max_index_souls // 2) + 1
+                    else:
+                        self.soul_count = 0
+
+                if 'necrosis' in futures:
+                    max_index_necrosis, max_value_necrosis, _ = futures['necrosis'].result()
+                    if max_value_necrosis > 0.9:
+                        self.necrosis_count = (max_index_necrosis + 1) * 2
+                    else:
+                        self.necrosis_count = 0
+
+                if 'deathsparks' in futures:
+                    max_index_deathsparks, max_value_deathsparks, _ = futures['deathsparks'].result()
+                    if max_value_deathsparks > 0.9:
+                        self.deathspark_count = (max_index_deathsparks + 1)
+                    else:
+                        self.deathspark_count = 0
 
             self.showFrame()
 
-            if self.soul_count == 5 and not self.soul_alert_played:
+            # Only play alerts for tracked buffs
+            if track_souls and self.soul_count == 5 and not self.soul_alert_played:
                 self.playAlert('soul')
                 self.soul_alert_played = True
-            elif self.soul_count < 5:
+            elif not track_souls or self.soul_count < 5:
                 self.soul_alert_played = False
 
-            if self.necrosis_count == 12 and not self.necrosis_alert_played:
+            if track_necrosis and self.necrosis_count == 12 and not self.necrosis_alert_played:
                 self.playAlert('necrosis')
                 self.necrosis_alert_played = True
-            elif self.necrosis_count < 12:
+            elif not track_necrosis or self.necrosis_count < 12:
                 self.necrosis_alert_played = False
 
         except Exception as e:

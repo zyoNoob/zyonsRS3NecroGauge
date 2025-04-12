@@ -35,6 +35,7 @@ This app supports the following customizations with presets provided by me:
 2. Windows Display Scaling
 3. Buff Bar Size
 4. Update Rate (How frequently the app updates its state, default is 50ms)
+5. Selective Buff Tracking (Choose which buffs you want to track and display)
 
 Interface scaling is not a preset parameter since it can vary greatly. To work with other than `100%` scaling, a custom preset will need to be made.
 
@@ -123,7 +124,13 @@ This will create a standalone executable in the `dist` directory.
   <p><em>Update Rate Selection</em></p>
 </div>
 
-6. **Scanning Region of Interest (Very Important):**
+6. Choose which buffs you want to track by checking or unchecking the corresponding checkboxes, and click confirm.
+<div style="text-align: center;">
+  <img src="media/buff_select.png" alt="Buff Tracking Selection" width="400">
+  <p><em>Buff Tracking Selection</em></p>
+</div>
+
+7. **Scanning Region of Interest (Very Important):**
     - Use the sliders (left, top, width, height) to ensure the cyan rectangle on the screen covers your RuneScape buff bar completely.
     - Once done, click confirm.
 <div style="text-align: center;">
@@ -131,7 +138,7 @@ This will create a standalone executable in the `dist` directory.
   <p><em>Scanning Area Selection</em></p>
 </div>
 
-7. Adjust the scale and position of your necro gauge using the sliders. Once satisfied, click confirm to save the settings in a config.json file in the application folder, and the application will restart to function properly.
+8. Adjust the scale and position of your necro gauge using the sliders. Once satisfied, click confirm to save the settings in a config.json file in the application folder, and the application will restart to function properly.
 <div style="text-align: center;">
   <img src="media/scale_and_position.png" alt="Customise the UI" width="600">
   <p><em>Customise Scale and Position</em></p>
