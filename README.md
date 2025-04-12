@@ -38,6 +38,13 @@ This app supports the following customizations with presets provided by me:
 
 Interface scaling is not a preset parameter since it can vary greatly. To work with other than `100%` scaling, a custom preset will need to be made.
 
+## Tracked Buffs
+
+The app tracks the following Necromancy buffs:
+1. **Soul Stacks** - Tracks up to 5 soul stacks with visual and audio alerts when maxed
+2. **Necrosis Stacks** - Tracks up to 12 necrosis stacks with visual and audio alerts when maxed
+3. **Death Spark Stacks** - Tracks up to 5 death spark stacks
+
 If you are not satisfied with the provided customizations or presets, you will need to manually set up a custom preset. Details on how to do this are below.
 
 If you dislike the audio alerts, you can disable them using the Windows audio mixer or change the sound of the alert by following the first approach listed below.
@@ -57,7 +64,35 @@ There are two ways to use this app:
 
 ## If you decide to go with the first approach
 
-Feel free to explore the code if you have privacy concerns. However, I will not provide instructions on setting up a custom conda environment. The libraries used are generic and available through PyPI, so running the script should not be too difficult.
+Feel free to explore the code if you have privacy concerns. The project uses the following libraries which are available through PyPI:
+
+- mss
+- opencv-python
+- pillow
+- pygame
+- pyinstaller
+- pyqt5
+
+### Environment Setup with uv
+
+This project uses `uv` for Python environment management. Follow these steps to set up your environment:
+
+1. Install uv following the instructions at [https://github.com/astral-sh/uv](https://github.com/astral-sh/uv)
+2. Clone this repository and navigate to the project directory
+3. Create a virtual environment and install dependencies:
+   ```
+   uv sync
+   ```
+
+### Building the Executable
+
+To build the executable, run the following command:
+
+```
+uv run pyinstaller --onefile --noconsole --add-data "assets:assets" necro_gauge.py --icon="assets\appicon.png"
+```
+
+This will create a standalone executable in the `dist` directory.
 
 ## For the more laid-back and average user, welcome to your own necromancy paradise :P
 
@@ -148,7 +183,8 @@ Feel free to explore the code if you have privacy concerns. However, I will not 
 7. Rename the images using this scheme:
     - Soul stack image -> `soul_{soulcount}.png, soul_{soulcount}_alt.png` (e.g., `soul_2.png`, `soul_2_alt.png` for 2 soul stacks).
     - Necrosis stack image -> `necrosis_{necrosiscount}.png` (e.g., `necrosis_4.png` for 4 necrosis stacks).
+    - Death spark stack image -> `deathspark_{sparkcount}.png` (e.g., `deathspark_3.png` for 3 death spark stacks).
 8. Copy or move these renamed images to the `custom_assets` folder created by the app.
-9. Ensure all images for soul count values `[1,2,3,4,5]` and necrosis count values `[2,4,6,8,10,12]` exist.
+9. Ensure all images for soul count values `[1,2,3,4,5]`, necrosis count values `[2,4,6,8,10,12]`, and death spark count values `[1,2,3,4,5]` exist.
 10. Once all steps are complete, run the program again with your custom image settings. It should work flawlessly.
 11. You can look in the custom_assets folder of the repository for reference as to how the images are named.
